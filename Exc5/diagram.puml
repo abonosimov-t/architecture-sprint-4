@@ -1,0 +1,49 @@
+@startuml
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+
+participant "MES Dashboard" as client
+participant "API Gateway" as gateway
+participant "MES Service" as mes
+participant "Cache Service" as cache
+participant "Database" as db
+
+== Создание нового заказа ==
+client -> gateway: POST /mes/orders
+activate gateway
+
+gateway -> mes: createOrder(orderData)
+activate mes
+
+mes -> db: insert order
+activate db
+db --> mes: return new_order
+db -> cache: refresh cache
+deactivate db
+
+mes --> gateway: return new_order
+gateway --> client: return order 201 Created
+
+deactivate mes
+deactivate gateway
+
+== Загрузка списка заказов для дашборда ==
+client -> gateway: GET /mes/dashboard/orders
+activate gateway
+
+gateway -> mes: getOrdersDashboard()
+activate mes
+
+mes -> cache: get(orders_dashboard_key)
+activate cache
+
+cache --> mes: return cached_orders
+deactivate cache
+mes --> gateway: return orders_dashboard
+gateway --> client: return dashboard 200 OK
+
+
+deactivate mes
+deactivate gateway
+
+@enduml
